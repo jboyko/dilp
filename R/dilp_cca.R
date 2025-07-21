@@ -21,7 +21,7 @@
 #' results <- dilp(McAbeeExample)
 #' dilp_cca(results)
 #'
-dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibration, climate_calibration = climateCalibration) {
+dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomy_calibration_data, climate_calibration = climate_calibration_data, colorby = "data") {
   # sort by alphabetical order, to ensure sites line up between this and the climate dataframe
   physiognomy_calibration <- physiognomy_calibration[order(physiognomy_calibration$Site), ]
   colnames(physiognomy_calibration) <- colnameClean(physiognomy_calibration)
@@ -36,7 +36,7 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibratio
 
   # remove the site column
   cca_climate <- climate_calibration %>%
-    dplyr::select(-"site")
+    dplyr::select(-c("site", "koppen", "whittaker"))
 
   ###### Preform the CCA, excluding the fossil site(s)
   cca_analysis <- vegan::cca(X = cca_leaf, Y = cca_climate, scale = "TRUE")
@@ -58,7 +58,7 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibratio
   # designate as calibration data
   cca_df$data <- "calibration"
   # bring the site column back
-  cca_df <- cbind(cca_df, dplyr::select(climate_calibration, "site"))
+  cca_df <- cbind(cca_df, dplyr::select(climate_calibration, "site", "koppen", "whittaker"))
 
   #### Merge fossil data
   # Convert CCA predictions to dataframe
@@ -67,6 +67,8 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibratio
   cca_df_fossil$data <- "fossil"
   # bring the site column back
   cca_df_fossil <- cbind(cca_df_fossil, dplyr::select(dilp_table$processed_site_data, "site"))
+  cca_df_fossil$koppen <- "Fossil"
+  cca_df_fossil$whittaker <- "Fossil"
   # merge the fossil and calibration CCA data
   cca_df_all <- rbind(cca_df, cca_df_fossil)
 
@@ -74,9 +76,16 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibratio
   # Create the convex hull
   hull_data <- cca_df %>% dplyr::slice(grDevices::chull(.data$CCA1, .data$CCA2))
 
-  # Plot
+  colorby <- colorby %>% stringr::str_to_lower()
+  if(!(colorby %in% colnames(cca_df_all))) {
+    colorby <- "data"
+  }
+
+  colnames(cca_df_all)[colnames(cca_df_all) == colorby] <- "colorby"
+
+    # Plot
   cca_plot <- ggplot2::ggplot(data = cca_df_all, ggplot2::aes(x = .data$CCA1, y = .data$CCA2)) +
-    ggplot2::geom_point(ggplot2::aes(color = .data$data, shape = .data$data), size = 4) +
+    ggplot2::geom_point(ggplot2::aes(color = .data$colorby, shape = .data$data), size = 4) +
     ggplot2::theme_classic() +
     ggplot2::geom_polygon(
       data = hull_data,
@@ -87,6 +96,7 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibratio
     ggrepel::geom_label_repel(
       data = cca_df_fossil, ggplot2::aes(label = .data$site),
       box.padding = 0.35, point.padding = 0.5, segment.color = "grey50", max.overlaps = 50
-    )
+    ) +
+    scale_color_manual()
   return(cca_plot)
 }

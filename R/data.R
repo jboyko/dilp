@@ -35,11 +35,13 @@
 #' Temperature and precipitation data associated with the modern localities used to calibrate the DiLP model
 #'
 #' @format ## `climate_calibration_data`
-#' A data frame with 92 rows and 3 columns:
+#' A data frame with 92 rows and 5 columns:
 #' \describe{
 #'   \item{Site}{Locality name}
 #'   \item{MAT}{Mean Annual Temperature (celsius)}
 #'   \item{MAP}{Mean Annual Precipitation (mm)}
+#'   \item{Koppen}{Koppen climate classifcations}
+#'   \item{Whittaker}{Whittaker climate classifications}
 #' }
 #' @source Peppe et al. 2011
 #' @references

@@ -7,7 +7,8 @@
 dilp_cca(
   dilp_table,
   physiognomy_calibration = physiognomyCalibration,
-  climate_calibration = climateCalibration
+  climate_calibration = climateCalibration,
+  colorby = "data"
 )
 }
 \arguments{

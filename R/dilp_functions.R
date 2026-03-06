@@ -44,7 +44,6 @@ dilp_processing <- function(specimen_data) {
     "no_of_primary_teeth", "no_of_subsidiary_teeth"
   )
 
-
   recommended_columns <- c(
     "petiole_width", "petiole_area", "blade_perimeter",
     "minimum_feret", "raw_blade_area", "internal_raw_blade_area"
@@ -251,9 +250,9 @@ dilp_errors <- function(specimen_data) {
 
   #Originally we were checking total tooth count, but it is automatically converted to NA in the processing step in case people put 0's in. Thus here we instead check primary and subsidiary teeth separately.
   error <- specimen_data[which(check1$no_of_primary_teeth > -1 & !(check1$specimen_number %in% mixed_margins$specimen_number)), "specimen_number"] #The mixed margin bit ensures that specimens in a mixed margin morphotype retain their tooth count and area values of 0, and no error is flagged for it
-  temp1 <- data.frame(Check = "Entire tooth count not NA", specimen_number = ifelse(nrow(error) != 0, as.character(error), "No errors found"))
+  temp1 <- data.frame(Check = "Entire tooth count not NA", specimen_number = ifelse(nrow(error) != 0, paste0(error$specimen_number, collapse = ", "), "No errors found"))
   error <- specimen_data[which(check1$no_of_subsidiary_teeth > -1 & !(check1$specimen_number %in% mixed_margins$specimen_number)), "specimen_number"] #The mixed margin bit ensures that specimens in a mixed margin morphotype retain their tooth count and area values of 0, and no error is flagged for it
-  temp1.1 <- data.frame(Check = "Entire tooth count not NA", specimen_number = ifelse(nrow(error) != 0, as.character(error), "No errors found"))
+  temp1.1 <- data.frame(Check = "Entire tooth count not NA", specimen_number = ifelse(nrow(error) != 0, paste0(error$specimen_number, collapse = ", "), "No errors found"))
 
   colnames(temp1) <- c("Check", "specimen_number")
   colnames(temp1.1) <- c("Check", "specimen_number")
@@ -265,29 +264,30 @@ dilp_errors <- function(specimen_data) {
   temp1 <- dplyr::distinct(temp1)
 
   error <- specimen_data[which(check1$tc_ip > -1 & !(check1$specimen_number %in% mixed_margins$specimen_number)), "specimen_number"]
-  temp2 <- data.frame(Check = "Entire tooth count : IP not NA", specimen_number = ifelse(nrow(error) != 0, as.character(error), "No errors found"))
+  temp2 <- data.frame(Check = "Entire tooth count : IP not NA", specimen_number = ifelse(nrow(error) != 0, paste0(error$specimen_number, collapse = ", "), "No errors found"))
   colnames(temp2) <- c("Check", "specimen_number")
 
-  error <- specimen_data[which(check1$perimeter_ratio > -1 & !(check1$specimen_number %in% mixed_margins$specimen_number)), "specimen_number"]
-  temp3 <- data.frame(Check = "Entire perimeter ratio not NA", specimen_number = ifelse(nrow(error) != 0, as.character(error), "No errors found"))
+  error <- data.frame("specimen_number" = check1$specimen_number[which(check1$perimeter_ratio > -1 & !(check1$specimen_number %in% mixed_margins$specimen_number))])
+
+  temp3 <- data.frame(Check = "Entire perimeter ratio not NA", specimen_number = ifelse(nrow(error) != 0, paste0(error$specimen_number, collapse = ", "), "No errors found"))
   colnames(temp3) <- c("Check", "specimen_number")
 
   check2 <- tidyr::drop_na(specimen_data, "fdr")
 
   error <- specimen_data[which(check2$fdr < 0 | check2$fdr > 1), "specimen_number"]
-  temp4 <- data.frame(Check = "FDR not between 0-1", specimen_number = ifelse(nrow(error) != 0, as.character(error), "No errors found"))
+  temp4 <- data.frame(Check = "FDR not between 0-1", specimen_number = ifelse(nrow(error) != 0, paste0(error$specimen_number, collapse = ", "), "No errors found"))
   colnames(temp4) <- c("Check", "specimen_number")
 
   error <- specimen_data[which(specimen_data$internal_raw_blade_perimeter_corrected > specimen_data$raw_blade_perimeter_corrected), "specimen_number"]
-  temp5 <- data.frame(Check = "External perimeter not larger than internal perimeter", specimen_number = ifelse(nrow(error) != 0, as.character(error), "No errors found"))
+  temp5 <- data.frame(Check = "External perimeter not larger than internal perimeter", specimen_number = ifelse(nrow(error) != 0, paste0(error$specimen_number, collapse = ", "), "No errors found"))
   colnames(temp5) <- c("Check", "specimen_number")
 
   error <- specimen_data[which(specimen_data$minimum_feret > specimen_data$feret), "specimen_number"]
-  temp6 <- data.frame(Check = "Feret is not larger than minimum Feret", specimen_number = ifelse(nrow(error) != 0, as.character(error), "No errors found"))
+  temp6 <- data.frame(Check = "Feret is not larger than minimum Feret", specimen_number = ifelse(nrow(error) != 0, paste0(error$specimen_number, collapse = ", "), "No errors found"))
   colnames(temp6) <- c("Check", "specimen_number")
 
-  error <- as.data.frame(specimen_data[which(specimen_data$perimeter_ratio <= 1 & !(specimen_data$specimen_number %in% mixed_margins$specimen_number)), "specimen_number"])
-  temp7 <- data.frame(Check = "Perimeter ratio not greater than 1", specimen_number = ifelse(nrow(error) != 0, as.character(error), "No errors found"))
+  error <- as.data.frame(specimen_data[which(specimen_data$perimeter_ratio < 1 & !(specimen_data$specimen_number %in% mixed_margins$specimen_number)), "specimen_number"])
+  temp7 <- data.frame(Check = "Perimeter ratio less than 1", specimen_number = ifelse(nrow(error) != 0, paste0(error$specimen_number, collapse = ", "), "No errors found"))
   colnames(temp7) <- c("Check", "specimen_number")
 
   errors <- dplyr::bind_rows(temp1, temp2, temp3, temp4, temp5, temp6, temp7)

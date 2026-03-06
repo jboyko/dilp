@@ -82,5 +82,4 @@ dilp_whittaker <- function(climate_data){
                                          x = .data$MAT.MLR))
 
   return(final_plot)
-
 }

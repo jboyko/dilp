@@ -241,15 +241,17 @@ dilp_processing <- function(specimen_data) {
 dilp_errors <- function(specimen_data) {
   ### This data frame will be filled with the results of the following error checks
   errors <- data.frame()
+  #Flag specimens in mixed margin morphotypes
   mixed_margins <- specimen_data %>%
     dplyr::group_by(.data$site, .data$morphotype) %>%
     dplyr::filter(1 %in% .data$margin & 0 %in% .data$margin) %>%
     dplyr::filter(.data$margin == 1) %>%
     dplyr::select("site", "morphotype", "specimen_number")
 
+  #Isolate entire margin specimens
   check1 <- specimen_data %>% dplyr::filter(.data$margin == 1)
 
-  #Originally we were checking total tooth count, but it is automatically converted to NA in the processing step in case people put 0's in. Thus here we instead check primary and subsidiary teeth separately.
+  #Originally we were checking total tooth count, but it is automatically converted to NA in the processing step in case people put 0's in. Thus here we instead check primary and subsidiary teeth separately. Presumably this is needed for mixed margins.
   error <- specimen_data[which(check1$no_of_primary_teeth > -1 & !(check1$specimen_number %in% mixed_margins$specimen_number)), "specimen_number"] #The mixed margin bit ensures that specimens in a mixed margin morphotype retain their tooth count and area values of 0, and no error is flagged for it
   temp1 <- data.frame(Check = "Entire tooth count not NA", specimen_number = ifelse(nrow(error) != 0, as.character(error), "No errors found"))
   error <- specimen_data[which(check1$no_of_subsidiary_teeth > -1 & !(check1$specimen_number %in% mixed_margins$specimen_number)), "specimen_number"] #The mixed margin bit ensures that specimens in a mixed margin morphotype retain their tooth count and area values of 0, and no error is flagged for it
@@ -336,13 +338,13 @@ dilp_outliers <- function(specimen_data) {
     temp.outliers <- grDevices::boxplot.stats(temp$trait)$out # check it for outliers
     temp.specimen <- temp[which(temp$trait %in% c(temp.outliers)), c("site", "specimen_number", "morphotype")] # determine specimen numbers for any outliers
     temp.output <- as.data.frame(temp.specimen)
-    if(nrow(temp.output)>0){temp.output$outlier <- vars[i]}
-    if(nrow(temp.output)>0){temp.output$within <- "entire dataset"}
+    if(nrow(temp.output)>0){temp.output$outlier.entire.dataset <- vars[i]}
     outliers <- if(nrow(temp.output)>0){dplyr::bind_rows(outliers, temp.output)} # bind to summary table
   }
 
   #####Outliers within morphotype
   morphs <- unique(specimen_data$morphotype)
+  outliers.2 <- data.frame()
   for (j in 1:length(morphs)) {
     temp <- specimen_data
     temp.morph <- dplyr::filter(temp, .data$morphotype == morphs[j])
@@ -353,11 +355,16 @@ dilp_outliers <- function(specimen_data) {
       temp.outliers <- grDevices::boxplot.stats(temp.morph2$trait)$out # check it for outliers
       temp.specimen <- temp.morph2[which(temp.morph2$trait %in% c(temp.outliers)), c("site", "specimen_number", "morphotype")] # determine specimen numbers for any outliers
       temp.output <- as.data.frame(temp.specimen)
-      if(nrow(temp.output)>0){temp.output$outlier <- vars[i]}
-      if(nrow(temp.output)>0){temp.output$within <- "morphotype"}
-      if(nrow(temp.output)>0){outliers <- dplyr::bind_rows(outliers, temp.output)} # bind to summary table
+      if(nrow(temp.output)>0){temp.output$outlier.morphotype <- vars[i]}
+      if(nrow(temp.output)>0){outliers.2 <- dplyr::bind_rows(outliers.2, temp.output)} # bind to summary table
     }
   }
+  #Merge entire dataset and morphotye datasets
+  outliers <- merge(outliers, outliers.2, by=c("site", "specimen_number", "morphotype"), all=TRUE)
+  #Replace NA's with "No outliers"
+  outliers$outlier.entire.dataset <- replace_na(outliers$outlier.entire.dataset, "No outliers")
+  outliers$outlier.morphotype <- replace_na(outliers$outlier.morphotype, "No outliers")
+  ##Sort by specimen number
   if(length(outliers) != 0) {
     warning("Outliers found. Please evaluate $outliers for possible wrong measurements")
   }

@@ -11,6 +11,10 @@
 #' \code{\link{physiognomy_calibration_data}}.
 #' @param climate_calibration A climate calibration dataset. Defaults to an internal version of
 #' \code{\link{climate_calibration_data}}.
+#' @param colorby One of "data", "koppen", "whittaker".  Defaults to data, which colors points by whether they
+#' are from the calibration data or not.  Koppen and Whittaker are works in progress.
+#'
+#'
 #'
 #' @references
 #' * Peppe, D.J., Royer, D.L., Cariglino, B., Oliver, S.Y., Newman, S., Leight, E., Enikolopov, G., Fernandez-Burgos, M., Herrera, F., Adams, J.M., Correa, E., Currano, E.D., Erickson, J.M., Hinojosa, L.F., Hoganson, J.W., Iglesias, A., Jaramillo, C.A., Johnson, K.R., Jordan, G.J., Kraft, N.J.B., Lovelock, E.C., Lusk, C.H., Niinemets, Ü., Peñuelas, J., Rapson, G., Wing, S.L. and Wright, I.J. (2011), Sensitivity of leaf size and shape to climate: global patterns and paleoclimatic applications. New Phytologist, 190: 724-739. https://doi.org/10.1111/j.1469-8137.2010.03615.x
@@ -21,7 +25,7 @@
 #' results <- dilp(McAbeeExample)
 #' dilp_cca(results)
 #'
-dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibration, climate_calibration = climateCalibration) {
+dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomy_calibration_data, climate_calibration = climate_calibration_data, colorby = "data") {
   # sort by alphabetical order, to ensure sites line up between this and the climate dataframe
   physiognomy_calibration <- physiognomy_calibration[order(physiognomy_calibration$Site), ]
   colnames(physiognomy_calibration) <- colnameClean(physiognomy_calibration)
@@ -36,7 +40,7 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibratio
 
   # remove the site column
   cca_climate <- climate_calibration %>%
-    dplyr::select(-"site")
+    dplyr::select(-c("site", "koppen", "whittaker"))
 
   ###### Preform the CCA, excluding the fossil site(s)
   cca_analysis <- vegan::cca(X = cca_leaf, Y = cca_climate, scale = "TRUE")
@@ -58,7 +62,7 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibratio
   # designate as calibration data
   cca_df$data <- "calibration"
   # bring the site column back
-  cca_df <- cbind(cca_df, dplyr::select(climate_calibration, "site"))
+  cca_df <- cbind(cca_df, dplyr::select(climate_calibration, "site", "koppen", "whittaker"))
 
   #### Merge fossil data
   # Convert CCA predictions to dataframe
@@ -67,6 +71,8 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibratio
   cca_df_fossil$data <- "fossil"
   # bring the site column back
   cca_df_fossil <- cbind(cca_df_fossil, dplyr::select(dilp_table$processed_site_data, "site"))
+  cca_df_fossil$koppen <- "Fossil"
+  cca_df_fossil$whittaker <- "Fossil"
   # merge the fossil and calibration CCA data
   cca_df_all <- rbind(cca_df, cca_df_fossil)
 
@@ -74,9 +80,22 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomyCalibratio
   # Create the convex hull
   hull_data <- cca_df %>% dplyr::slice(grDevices::chull(.data$CCA1, .data$CCA2))
 
-  # Plot
+  colorby <- colorby %>% stringr::str_to_lower()
+  if(!(colorby %in% colnames(cca_df_all))) {
+    colorby <- "data"
+  }
+
+  if(colorby == "data"){
+    cca_df_all <- cca_df_all %>%
+      dplyr::mutate(colorby = data)
+    colorby <- "colorby"
+  }
+
+  colnames(cca_df_all)[colnames(cca_df_all) == colorby] <- "colorby"
+
+    # Plot
   cca_plot <- ggplot2::ggplot(data = cca_df_all, ggplot2::aes(x = .data$CCA1, y = .data$CCA2)) +
-    ggplot2::geom_point(ggplot2::aes(color = .data$data, shape = .data$data), size = 4) +
+    ggplot2::geom_point(ggplot2::aes(color = .data$colorby, shape = .data$data), size = 4) +
     ggplot2::theme_classic() +
     ggplot2::geom_polygon(
       data = hull_data,

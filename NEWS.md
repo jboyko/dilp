@@ -1,3 +1,7 @@
+# dilp 1.3.0
+* Refixed outliers merge to improve readability
+* Added some extra visiblity parameters in `dilp_cca()` that still don't completely work
+
 # dilp 1.2.1
 * Fixed Outliers merge so there aren't thousands of outliers.
 * Adjusted Errors so that it pulls by column header rather than index

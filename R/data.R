@@ -35,11 +35,13 @@
 #' Temperature and precipitation data associated with the modern localities used to calibrate the DiLP model
 #'
 #' @format ## `climate_calibration_data`
-#' A data frame with 92 rows and 3 columns:
+#' A data frame with 92 rows and 5 columns:
 #' \describe{
 #'   \item{Site}{Locality name}
 #'   \item{MAT}{Mean Annual Temperature (celsius)}
 #'   \item{MAP}{Mean Annual Precipitation (mm)}
+#'   \item{Koppen}{Koppen climate classifcations}
+#'   \item{Whittaker}{Whittaker climate classifications}
 #' }
 #' @source Peppe et al. 2011
 #' @references
@@ -180,3 +182,8 @@ precip_regressions <- list(
 #' @references
 #' *Valentin Ștefan, & Sam Levin. (2018). plotbiomes: R package for plotting Whittaker biomes with ggplot2 (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.7145245
 "Whittaker_biomes"
+
+utils::globalVariables(c(
+  "climate_calibration_data",
+  "physiognomy_calibration_data"
+))

@@ -362,8 +362,8 @@ dilp_outliers <- function(specimen_data) {
   #Merge entire dataset and morphotye datasets
   outliers <- merge(outliers, outliers.2, by=c("site", "specimen_number", "morphotype"), all=TRUE)
   #Replace NA's with "No outliers"
-  outliers$outlier.entire.dataset <- replace_na(outliers$outlier.entire.dataset, "No outliers")
-  outliers$outlier.morphotype <- replace_na(outliers$outlier.morphotype, "No outliers")
+  outliers$outlier.entire.dataset[is.na(outliers$outlier.entire.dataset)] <- "No outliers"
+  outliers$outlier.morphotype[is.na(outliers$outlier.morphotype)] <- "No outliers"
   ##Sort by specimen number
   if(length(outliers) != 0) {
     warning("Outliers found. Please evaluate $outliers for possible wrong measurements")

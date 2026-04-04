@@ -6,8 +6,8 @@
 \usage{
 dilp_cca(
   dilp_table,
-  physiognomy_calibration = physiognomyCalibration,
-  climate_calibration = climateCalibration,
+  physiognomy_calibration = physiognomy_calibration_data,
+  climate_calibration = climate_calibration_data,
   colorby = "data"
 )
 }
@@ -19,6 +19,9 @@ dilp_cca(
 
 \item{climate_calibration}{A climate calibration dataset. Defaults to an internal version of
 \code{\link{climate_calibration_data}}.}
+
+\item{colorby}{One of "data", "koppen", "whittaker".  Defaults to data, which colors points by whether they
+are from the calibration data or not.  Koppen and Whittaker are works in progress.}
 }
 \value{
 A ggplot2 plot

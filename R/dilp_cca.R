@@ -11,6 +11,10 @@
 #' \code{\link{physiognomy_calibration_data}}.
 #' @param climate_calibration A climate calibration dataset. Defaults to an internal version of
 #' \code{\link{climate_calibration_data}}.
+#' @param colorby One of "data", "koppen", "whittaker".  Defaults to data, which colors points by whether they
+#' are from the calibration data or not.  Koppen and Whittaker are works in progress.
+#'
+#'
 #'
 #' @references
 #' * Peppe, D.J., Royer, D.L., Cariglino, B., Oliver, S.Y., Newman, S., Leight, E., Enikolopov, G., Fernandez-Burgos, M., Herrera, F., Adams, J.M., Correa, E., Currano, E.D., Erickson, J.M., Hinojosa, L.F., Hoganson, J.W., Iglesias, A., Jaramillo, C.A., Johnson, K.R., Jordan, G.J., Kraft, N.J.B., Lovelock, E.C., Lusk, C.H., Niinemets, Ü., Peñuelas, J., Rapson, G., Wing, S.L. and Wright, I.J. (2011), Sensitivity of leaf size and shape to climate: global patterns and paleoclimatic applications. New Phytologist, 190: 724-739. https://doi.org/10.1111/j.1469-8137.2010.03615.x
@@ -81,6 +85,12 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomy_calibrati
     colorby <- "data"
   }
 
+  if(colorby == "data"){
+    cca_df_all <- cca_df_all %>%
+      dplyr::mutate(colorby = data)
+    colorby <- "colorby"
+  }
+
   colnames(cca_df_all)[colnames(cca_df_all) == colorby] <- "colorby"
 
     # Plot
@@ -96,7 +106,6 @@ dilp_cca <- function(dilp_table, physiognomy_calibration = physiognomy_calibrati
     ggrepel::geom_label_repel(
       data = cca_df_fossil, ggplot2::aes(label = .data$site),
       box.padding = 0.35, point.padding = 0.5, segment.color = "grey50", max.overlaps = 50
-    ) +
-    scale_color_manual()
+    )
   return(cca_plot)
 }

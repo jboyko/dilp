@@ -40,8 +40,8 @@ You can install the development version of dilp from
 [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("mjbutrim/dilp")
+# install.packages("pak")
+pak::pak("https://github.com/mjbutrim/dilp")
 ```
 
 ## Example

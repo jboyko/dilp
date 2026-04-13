@@ -30,15 +30,21 @@
 #'   Placement proceeds genus → family → order → root. A warning is issued for
 #'   any species that cannot be placed more precisely than the root.
 #'
-#' @return A list with four elements:
+#' @return A list with five elements:
 #' * `results` — a data frame of site-level MAT and MAP estimates with columns
-#'   `site`, `MAT.PIP` (°C), `MAP.PIP` (cm), and `n_species`.
+#'   `site`, `MAT.PIP` (°C), `MAP.PIP` (cm), `n_species`, `MAT.PIP.error`
+#'   (±°C), `MAP.PIP.error.plus`, and `MAP.PIP.error.minus` (cm). Uncertainty
+#'   columns are RMSE-based, from 10-fold LOSO cross-validation in Boyko et al.
+#'   (in prep), and do not reflect phylogenetic placement uncertainty.
 #' * `species_predictions` — a data frame of per-species-per-site estimates with
 #'   columns `site`, `species`, `age_ma`, `MAT.PIP`, and `MAP.PIP`.
 #' * `placement_log` — a data frame recording how each fossil species was placed
 #'   on the phylogeny (`species`, `placement_level`, `target`).
 #' * `processed_leaf_data` — the full processed specimen-level data frame from
 #'   [dilp_processing()].
+#' * `processed_site_data` — site-level means of leaf physiognomic variables,
+#'   aggregated via morphotype then site (same structure as [dilp()]). Used by
+#'   [dilp_cca()].
 #'
 #' @references
 #' * Boyko, J.D., Hagen, E.R., O'Meara, B.C., Lawing, A.M., Peppe, D.J.,
@@ -74,6 +80,12 @@
 #' results$results
 #' results$species_predictions
 #' results$placement_log
+#'
+#' # Plot sites on a Whittaker biome diagram
+#' dilp_whittaker(results)
+#'
+#' # Check fossil site physiognomy against the calibration space
+#' dilp_cca(results)
 #' }
 dilp_pgls <- function(specimen_data) {
 
@@ -116,6 +128,32 @@ dilp_pgls <- function(specimen_data) {
     processed$perimeter_ratio <- ifelse(untoothed & is.na(processed$perimeter_ratio),
                                         1, processed$perimeter_ratio)
   }
+
+  # ------------------------------------------------------------------
+  # 3a. Build processed_site_data for compatibility with dilp_cca()
+  #     Mirrors dilp() aggregation: specimen -> morphotype -> site
+  # ------------------------------------------------------------------
+  site_morphotype <- processed %>%
+    dplyr::select(-"specimen_number") %>%
+    dplyr::summarize(
+      .by = c("site", "morphotype"),
+      dplyr::across(dplyr::where(~ !is.character(.)), \(x) mean(x, na.rm = TRUE))
+    )
+
+  # Mixed-margin morphotypes get margin = 0.5
+  if (length(unique(stats::na.omit(site_morphotype$margin))) > 2) {
+    site_morphotype$margin[site_morphotype$margin > 0 & site_morphotype$margin < 1] <- 0.5
+  }
+
+  processed_site_data <- site_morphotype %>%
+    dplyr::group_by(.data$site) %>%
+    dplyr::select(-"morphotype") %>%
+    dplyr::summarize(dplyr::across(dplyr::where(~ !is.character(.)), \(x) mean(x, na.rm = TRUE))) %>%
+    dplyr::mutate(
+      margin         = .data$margin * 100,
+      tc_ip          = ifelse(.data$margin == 100, 0,  .data$tc_ip),
+      perimeter_ratio = ifelse(.data$margin == 100, 1, .data$perimeter_ratio)
+    )
 
   # ------------------------------------------------------------------
   # 3. Aggregate to species grand means (for tree placement)
@@ -220,13 +258,30 @@ dilp_pgls <- function(specimen_data) {
       .groups   = "drop"
     )
 
+  # ------------------------------------------------------------------
+  # 9. Attach RMSE-based uncertainty from 10-fold LOSO cross-validation
+  #    (Boyko et al., in prep). MAT error is symmetric (°C); MAP errors
+  #    are asymmetric, back-transformed from the log scale.
+  # ------------------------------------------------------------------
+  log_map_pip <- log(results$MAP.PIP)
+  results$MAT.PIP.error       <- 3.64
+  results$MAP.PIP.error.plus  <- exp(log_map_pip + 0.54) - results$MAP.PIP
+  results$MAP.PIP.error.minus <- results$MAP.PIP - exp(log_map_pip - 0.54)
+
+  message(
+    "Uncertainty columns (MAT.PIP.error, MAP.PIP.error.*) are RMSE-based, ",
+    "derived from 10-fold leave-one-site-out cross-validation reported in ",
+    "Boyko et al. (in prep). They do not account for phylogenetic placement uncertainty."
+  )
+
   list(
-    results           = as.data.frame(results),
+    results             = as.data.frame(results),
     species_predictions = as.data.frame(
       sp_site[, c("site", "species", "age_ma", "MAT.PIP", "MAP.PIP")]
     ),
-    placement_log     = placement_log,
-    processed_leaf_data = processed
+    placement_log       = placement_log,
+    processed_leaf_data = processed,
+    processed_site_data = as.data.frame(processed_site_data)
   )
 }
 

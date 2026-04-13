@@ -33,15 +33,15 @@ base_whittaker <- function(){
 #' Whittaker Plot from the [plotbiomes](https://github.com/valentinitnelav/plotbiomes)
 #' package by Ștefan Valentin and Sam Levin.
 #'
-#' @param climate_data A data frame containing either the direct output of a `dilp()`
-#' call, or the $results tab from that output.
-#' Can also be a data frame with the following required columns:
-#' * site
-#' * MAT.MLR
-#' * MAT.MLR.error
-#' * MAP.MLR
-#' * MAP.MLR.error.minus
-#' * MAP.MLR.error.plus
+#' @param climate_data A data frame containing either the direct output of a
+#' [dilp()] or [dilp_pgls()] call, or the `$results` element from either.
+#' Can also be a data frame with the following required columns (MLR or PIP):
+#' * `site`
+#' * `MAT.MLR` or `MAT.PIP`
+#' * `MAT.MLR.error` or `MAT.PIP.error`
+#' * `MAP.MLR` or `MAP.PIP`
+#' * `MAP.MLR.error.minus` / `MAP.MLR.error.plus`, or
+#'   `MAP.PIP.error.minus` / `MAP.PIP.error.plus`
 #'
 #'
 #' @returns A modifiable ggplot with dilp climate-reconstructed sites plotted
@@ -62,24 +62,40 @@ dilp_whittaker <- function(climate_data){
       climate_data <- climate_data$results
     }
   }
+
+  # Detect whether data comes from dilp_pgls() (PIP columns) or dilp() (MLR columns)
+  if ("MAT.PIP" %in% colnames(climate_data)) {
+    mat_col       <- "MAT.PIP"
+    map_col       <- "MAP.PIP"
+    mat_err       <- "MAT.PIP.error"
+    map_err_plus  <- "MAP.PIP.error.plus"
+    map_err_minus <- "MAP.PIP.error.minus"
+  } else {
+    mat_col       <- "MAT.MLR"
+    map_col       <- "MAP.MLR"
+    mat_err       <- "MAT.MLR.error"
+    map_err_plus  <- "MAP.MLR.error.plus"
+    map_err_minus <- "MAP.MLR.error.minus"
+  }
+
   base_plot <- base_whittaker()
 
   final_plot <- base_plot +
     ggrepel::geom_label_repel(data = climate_data,
-                              ggplot2::aes(x = .data$MAT.MLR, y = .data$MAP.MLR, label = .data$site),
+                              ggplot2::aes(x = .data[[mat_col]], y = .data[[map_col]], label = .data$site),
                               box.padding = 0.35, point.padding = 0.5, segment.color = "grey50", max.overlaps = 50
     ) +
     ggplot2::geom_point(data = climate_data,
-                        ggplot2::aes(x = .data$MAT.MLR, y = .data$MAP.MLR),
+                        ggplot2::aes(x = .data[[mat_col]], y = .data[[map_col]]),
                         size = 3) +
     ggplot2::geom_errorbar(data = climate_data,
-                           ggplot2::aes(xmin = .data$MAT.MLR - .data$MAT.MLR.error,
-                                        xmax = .data$MAT.MLR + .data$MAT.MLR.error,
-                                        y = .data$MAP.MLR)) +
+                           ggplot2::aes(xmin = .data[[mat_col]] - .data[[mat_err]],
+                                        xmax = .data[[mat_col]] + .data[[mat_err]],
+                                        y = .data[[map_col]])) +
     ggplot2::geom_errorbar(data = climate_data,
-                            ggplot2::aes(ymin = .data$MAP.MLR - .data$MAP.MLR.error.minus,
-                                         ymax = .data$MAP.MLR + .data$MAP.MLR.error.plus,
-                                         x = .data$MAT.MLR))
+                           ggplot2::aes(ymin = .data[[map_col]] - .data[[map_err_minus]],
+                                        ymax = .data[[map_col]] + .data[[map_err_plus]],
+                                        x = .data[[mat_col]]))
 
   return(final_plot)
 }

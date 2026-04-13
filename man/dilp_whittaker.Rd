@@ -7,16 +7,16 @@
 dilp_whittaker(climate_data)
 }
 \arguments{
-\item{climate_data}{A data frame containing either the direct output of a \code{dilp()}
-call, or the $results tab from that output.
-Can also be a data frame with the following required columns:
+\item{climate_data}{A data frame containing either the direct output of a
+\code{\link[=dilp]{dilp()}} or \code{\link[=dilp_pgls]{dilp_pgls()}} call, or the \verb{$results} element from either.
+Can also be a data frame with the following required columns (MLR or PIP):
 \itemize{
-\item site
-\item MAT.MLR
-\item MAT.MLR.error
-\item MAP.MLR
-\item MAP.MLR.error.minus
-\item MAP.MLR.error.plus
+\item \code{site}
+\item \code{MAT.MLR} or \code{MAT.PIP}
+\item \code{MAT.MLR.error} or \code{MAT.PIP.error}
+\item \code{MAP.MLR} or \code{MAP.PIP}
+\item \code{MAP.MLR.error.minus} / \code{MAP.MLR.error.plus}, or
+\code{MAP.PIP.error.minus} / \code{MAP.PIP.error.plus}
 }}
 }
 \value{

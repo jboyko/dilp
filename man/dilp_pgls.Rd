@@ -19,16 +19,22 @@ Placement proceeds genus → family → order → root. A warning is issued for
 any species that cannot be placed more precisely than the root.}
 }
 \value{
-A list with four elements:
+A list with five elements:
 \itemize{
 \item \code{results} — a data frame of site-level MAT and MAP estimates with columns
-\code{site}, \code{MAT.PIP} (°C), \code{MAP.PIP} (cm), and \code{n_species}.
+\code{site}, \code{MAT.PIP} (°C), \code{MAP.PIP} (cm), \code{n_species}, \code{MAT.PIP.error}
+(±°C), \code{MAP.PIP.error.plus}, and \code{MAP.PIP.error.minus} (cm). Uncertainty
+columns are RMSE-based, from 10-fold LOSO cross-validation in Boyko et al.
+(in prep), and do not reflect phylogenetic placement uncertainty.
 \item \code{species_predictions} — a data frame of per-species-per-site estimates with
 columns \code{site}, \code{species}, \code{age_ma}, \code{MAT.PIP}, and \code{MAP.PIP}.
 \item \code{placement_log} — a data frame recording how each fossil species was placed
 on the phylogeny (\code{species}, \code{placement_level}, \code{target}).
 \item \code{processed_leaf_data} — the full processed specimen-level data frame from
 \code{\link[=dilp_processing]{dilp_processing()}}.
+\item \code{processed_site_data} — site-level means of leaf physiognomic variables,
+aggregated via morphotype then site (same structure as \code{\link[=dilp]{dilp()}}). Used by
+\code{\link[=dilp_cca]{dilp_cca()}}.
 }
 }
 \description{
@@ -60,6 +66,12 @@ results <- dilp_pgls(fossil_data)
 results$results
 results$species_predictions
 results$placement_log
+
+# Plot sites on a Whittaker biome diagram
+dilp_whittaker(results)
+
+# Check fossil site physiognomy against the calibration space
+dilp_cca(results)
 }
 }
 \references{

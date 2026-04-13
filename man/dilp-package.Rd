@@ -26,6 +26,7 @@ Authors:
   \item Aly Baumgartner
   \item Daniel J. Peppe
   \item Dana L. Royer
+  \item James D. Boyko
 }
 
 }

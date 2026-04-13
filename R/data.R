@@ -185,5 +185,13 @@ precip_regressions <- list(
 
 utils::globalVariables(c(
   "climate_calibration_data",
-  "physiognomy_calibration_data"
+  "physiognomy_calibration_data",
+  "pgls_beta_mat",
+  "pgls_beta_map",
+  "pgls_lambda_mat",
+  "pgls_lambda_map",
+  "pgls_Ke_mat",
+  "pgls_Ke_map",
+  "pgls_pred_names",
+  "pgls_name_table"
 ))

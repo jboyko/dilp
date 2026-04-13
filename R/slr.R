@@ -50,8 +50,11 @@
 #' @examples
 #' temp_slr(McAbeeExample, regression = "Peppe2011")
 temp_slr <- function(data, regression = "Peppe2018", slope = NULL, constant = NULL, error = NULL) {
-  colnames(data) <- colnameClean(data) %>%
-    stringr::str_replace_all("species", "morphotype")
+  cleaned <- colnameClean(data)
+  if (!"morphotype" %in% cleaned) {
+    cleaned <- stringr::str_replace_all(cleaned, "^species$", "morphotype")
+  }
+  colnames(data) <- cleaned
   required_columns <- c("morphotype", "margin")
   missing_columns <- required_columns[!required_columns %in% colnames(data)]
   if (length(missing_columns) > 0) {

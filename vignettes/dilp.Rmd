@@ -172,3 +172,107 @@ You can also use your own regressions for both of these functions as long as you
 ```{r}
 temp_slr(McAbeeExample, slope = 0.290, constant = 1.320, error = 5)
 ```
+
+#### Phylogenetically-Informed Predictions (PIP)
+
+`dilp_pgls()` provides an alternative paleoclimate reconstruction method that borrows statistical strength from phylogenetically close extant relatives. Rather than treating each fossil species as independent, the method applies a phylogenetic covariance correction that pulls each species' prediction toward the climate values of its nearest relatives on a large angiosperm scaffold tree.
+
+This approach is particularly useful when:
+
+- Few specimens are available per species or site
+- The fossil flora is phylogenetically close to well-sampled extant groups
+- You want a cross-validated alternative to the standard DiLP regressions
+
+The underlying model is a Phylogenetic Generalised Least Squares (PGLS) regression trained on 1,847 extant species (Royer et al.), with the full prediction formula:
+
+> ŷ = **X**β + **t**(V_cross) **K**ε
+
+where V_cross is the phylogenetic covariance between fossil and extant training species, and the correction term is precomputed and shipped with the package.
+
+##### Required columns
+
+`dilp_pgls()` requires all the standard DiLP specimen columns (same as `dilp()`), plus four taxonomy columns and a fossil age:
+
+| Column | Description |
+|---|---|
+| `species` | Binomial species name (e.g. `"Betula_papyrifera"`) |
+| `genus` | Genus for phylogenetic placement fallback |
+| `family` | Family for phylogenetic placement fallback |
+| `order` | Order for phylogenetic placement fallback |
+| `age_ma` | Fossil age in millions of years |
+
+Phylogenetic placement proceeds genus → family → order → root, with a warning issued for any species that cannot be placed more precisely than the root.
+
+##### Example workflow
+
+Here we add taxonomy to the `McAbeeExample` dataset and run `dilp_pgls()`. In practice, these columns would already be present in your data.
+
+```{r dilp_pgls workflow, eval = FALSE}
+# Add taxonomy columns to McAbeeExample
+# In practice these would already be in your dataset
+set.seed(42)
+fossil_data <- McAbeeExample
+n <- nrow(fossil_data)
+fossil_data$species <- paste0("Betula_sp", sample(1:5, n, replace = TRUE))
+fossil_data$genus   <- "Betula"
+fossil_data$family  <- "Betulaceae"
+fossil_data$order   <- "Fagales"
+fossil_data$age_ma  <- 52.0  # Early Eocene
+
+pgls_results <- dilp_pgls(fossil_data)
+```
+
+```{r dilp_pgls hidden run, include = FALSE}
+set.seed(42)
+fossil_data <- McAbeeExample
+n <- nrow(fossil_data)
+fossil_data$species <- paste0("Betula_sp", sample(1:5, n, replace = TRUE))
+fossil_data$genus   <- "Betula"
+fossil_data$family  <- "Betulaceae"
+fossil_data$order   <- "Fagales"
+fossil_data$age_ma  <- 52.0
+pgls_results <- dilp_pgls(fossil_data)
+```
+
+The return value is a list with four elements:
+
+```{r pgls result elements}
+print(paste0("pgls_results$", names(pgls_results)))
+```
+
+Site-level MAT and MAP estimates are in `results`. `n_species` records how many species contributed to each site average.
+
+```{r pgls site results}
+pgls_results$results
+```
+
+Per-species predictions are available in `species_predictions`, which shows the climate estimate for each species at each site before averaging.
+
+```{r pgls species predictions}
+pgls_results$species_predictions
+```
+
+The `placement_log` records exactly how each fossil species was grafted onto the scaffold phylogeny — useful for understanding how much phylogenetic information was available for each taxon.
+
+```{r pgls placement log}
+pgls_results$placement_log
+```
+
+##### Comparing DiLP and PIP estimates
+
+Both methods can be run on the same dataset and their estimates compared directly.
+
+```{r compare dilp and pgls, eval = FALSE}
+dilp_r  <- dilp(fossil_data)
+pgls_r  <- dilp_pgls(fossil_data)
+
+data.frame(
+  Site    = dilp_r$results$site,
+  MAT_DiLP = dilp_r$results$MAT.MLR,
+  MAT_PIP  = pgls_r$results$MAT.PIP,
+  MAP_DiLP = dilp_r$results$MAP.MLR,
+  MAP_PIP  = pgls_r$results$MAP.PIP
+)
+```
+
+In 10-fold leave-one-site-out cross-validation across 92 modern sites, PIP achieved an RMSE of 3.64 °C for MAT (versus 4.0 °C for standard DiLP MLR), making it the preferred method when taxonomy is available.

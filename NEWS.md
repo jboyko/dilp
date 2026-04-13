@@ -1,3 +1,12 @@
+# dilp 1.4.0
+* Added `dilp_pgls()` for Phylogenetically-Informed Predictions (PIP). Accepts
+  the same specimen-level input as `dilp()` plus taxonomy columns (`species`,
+  `genus`, `family`, `order`) and fossil age (`age_ma`). Returns site-level MAT
+  and MAP estimates with a phylogenetic covariance correction, per-species
+  predictions, and a placement log recording how each fossil taxon was grafted
+  onto the angiosperm scaffold tree.
+* Added `ape` and `phytools` as package dependencies.
+
 # dilp 1.3.0
 * Refixed outliers merge to improve readability
 * Added some extra visiblity parameters in `dilp_cca()` that still don't completely work

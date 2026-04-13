@@ -28,6 +28,11 @@ traits. Key functions included are:
 
   - Estimate mean annual precipitation using leaf area analysis
 
+- Phylogenetically-Informed Predictions - `dilp_pgls()`
+
+  - Estimate MAT and MAP using a phylogenetic PGLS model that borrows
+    strength from extant relatives on a large angiosperm scaffold tree
+
 ## Installation
 
 You can install the stable version of dilp from your R session with:

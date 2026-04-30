@@ -264,9 +264,9 @@ dilp_pgls <- function(specimen_data) {
   #    are asymmetric, back-transformed from the log scale.
   # ------------------------------------------------------------------
   log_map_pip <- log(results$MAP.PIP)
-  results$MAT.PIP.error       <- 3.64
-  results$MAP.PIP.error.plus  <- exp(log_map_pip + 0.54) - results$MAP.PIP
-  results$MAP.PIP.error.minus <- results$MAP.PIP - exp(log_map_pip - 0.54)
+  results$MAT.PIP.error       <- 3.42
+  results$MAP.PIP.error.plus  <- exp(log_map_pip + 0.52) - results$MAP.PIP
+  results$MAP.PIP.error.minus <- results$MAP.PIP - exp(log_map_pip - 0.52)
 
   message(
     "Uncertainty columns (MAT.PIP.error, MAP.PIP.error.*) are RMSE-based, ",

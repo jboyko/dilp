@@ -1,3 +1,43 @@
+# dilp 1.4.0.9001
+* `dilp_pgls()` now takes raw leaf-level data all the way through, so no
+  pre-processing is required of the caller. Specimens are averaged to
+  morphotypes, morphotypes to species-by-site occurrences, and missing
+  predictors are imputed inside the function with the bagged-tree imputers
+  fitted on the calibration data. Values imputed by the caller beforehand were
+  previously discarded by `dilp_processing()` without warning.
+* Fixed a fatal error ("argument is of length zero") when an occurrence had no
+  usable taxonomy. Such an occurrence was grafted under an empty tip label,
+  which put an `NA` into the genus lookup and made the *next* occurrence
+  resolve to a zero-length node. Taxonomic lookups are now restricted to an
+  immutable snapshot of the scaffold tips, so a grafted fossil can never
+  become evidence for a later placement, and a failed lookup falls through to
+  the next rank instead of producing a zero-length index.
+* Fixed occurrence keying: occurrences were grouped by taxonomy alone, so every
+  morphotype without a binomial at a site collapsed into a single row. An
+  occurrence is now identified by its binomial where genus and epithet are
+  both given and by its morphotype otherwise.
+* Fixed the phylogenetic correction, which omitted the fitted lambda scaling of
+  the fossil-to-calibration covariance, and which pruned the tree with
+  `keep.tip()` before computing covariances — pruning can move the root and
+  rescale every entry. The covariance matrix of the grafted tree is now
+  subsetted instead.
+* Site-level MAP is now a geometric mean, averaged on the log scale the model
+  was fitted on and then back-transformed, rather than an arithmetic mean of
+  back-transformed values.
+* `age_ma` is validated, and is required for every row.
+* Added the `taxonomy_scenario` argument. Informal taxonomic names, marked with
+  quotation marks, are censored under the default `"formal_only"` and used as
+  provisional placement hypotheses under `"include_informal"`.
+* Added `$unmatched_taxa`, listing occurrences whose reported taxonomy matched
+  nothing in the calibration phylogeny below the root, to help find
+  misspellings and synonyms; and `$imputation_summary`, giving the number of
+  imputed values per predictor.
+* Refreshed the pre-fitted PGLS model objects, scaffold tree, and RMSE
+  constants from the current calibration pipeline. `dilp_pgls()` now reproduces
+  the analysis pipeline's fossil predictions to within 5e-13 degrees C and
+  2e-11 cm across all 360 occurrences in both taxonomy scenarios.
+* Added `caret` and `ipred` as package dependencies, for imputation.
+
 # dilp 1.4.0
 * Added `dilp_pgls()` for Phylogenetically-Informed Predictions (PIP). Accepts
   the same specimen-level input as `dilp()` plus taxonomy columns (`species`,

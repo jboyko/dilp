@@ -21,6 +21,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Matthew J. Butrim \email{mbutrim@uwyo.edu} [copyright holder]
   \item Alexander J. Lowe
   \item Andrew G. Flynn
   \item Aly Baumgartner

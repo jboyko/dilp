@@ -4,35 +4,61 @@
 \alias{dilp_pgls}
 \title{Generate phylogenetically-informed DiLP climate reconstructions}
 \usage{
-dilp_pgls(specimen_data)
+dilp_pgls(
+  specimen_data,
+  taxonomy_scenario = c("formal_only", "include_informal")
+)
 }
 \arguments{
-\item{specimen_data}{A data frame containing specimen-level leaf physiognomic
-data. Must include all columns required by \code{\link[=dilp_processing]{dilp_processing()}}, plus:
+\item{specimen_data}{A data frame of specimen-level (leaf-level) leaf
+physiognomic data. Must include all columns required by
+\code{\link[=dilp_processing]{dilp_processing()}}, plus:
 \itemize{
-\item \code{species} — binomial species name used for phylogenetic placement
-\item \code{genus}, \code{family}, \code{order} — taxonomic ranks used as placement fallbacks
-\item \code{age_ma} — fossil age in millions of years, used for tip placement depth
+\item \code{genus}, \code{family}, \code{order} - taxonomic ranks used for phylogenetic
+placement, in that order of preference
+\item \code{age_ma} - site age in millions of years, used for occurrence-tip depth
 }
 
-Placement proceeds genus → family → order → root. A warning is issued for
-any species that cannot be placed more precisely than the root.}
+An optional \code{species} column holds the species epithet. Occurrences are
+identified by \code{genus} plus \code{species} where both are given, and by
+\code{morphotype} otherwise, so unnamed morphotypes stay distinct.
+
+Placement proceeds genus -> family -> order -> root. Occurrences that
+reach only the root, and any that fail placement outright, are reported in
+\verb{$unmatched_taxa}.}
+
+\item{taxonomy_scenario}{How to treat informal taxonomic names, which Dana
+Royer's datasets mark with quotation marks (for example \code{"Cornophyllum"}).
+\code{"formal_only"} (the default) censors every quoted rank, so an informal
+name is never used as phylogenetic evidence. \code{"include_informal"} strips
+the quotation marks and uses the reported name as a provisional placement
+hypothesis; it is a sensitivity analysis, not a second best estimate.}
 }
 \value{
-A list with five elements:
+A list with seven elements:
 \itemize{
-\item \code{results} — a data frame of site-level MAT and MAP estimates with columns
-\code{site}, \code{MAT.PIP} (°C), \code{MAP.PIP} (cm), \code{n_species}, \code{MAT.PIP.error}
-(±°C), \code{MAP.PIP.error.plus}, and \code{MAP.PIP.error.minus} (cm). Uncertainty
-columns are RMSE-based, from 10-fold LOSO cross-validation in Boyko et al.
-(in prep), and do not reflect phylogenetic placement uncertainty.
-\item \code{species_predictions} — a data frame of per-species-per-site estimates with
-columns \code{site}, \code{species}, \code{age_ma}, \code{MAT.PIP}, and \code{MAP.PIP}.
-\item \code{placement_log} — a data frame recording how each fossil species was placed
-on the phylogeny (\code{species}, \code{placement_level}, \code{target}).
-\item \code{processed_leaf_data} — the full processed specimen-level data frame from
+\item \code{results} - a data frame of site-level MAT and MAP estimates with columns
+\code{site}, \code{MAT.PIP} (degrees C), \code{MAP.PIP} (cm), \code{n_species}, \code{MAT.PIP.error}
+(+/- degrees C), \code{MAP.PIP.error.plus}, and \code{MAP.PIP.error.minus} (cm). MAP is a
+geometric site mean, averaged on the log scale and back-transformed.
+Uncertainty columns are RMSE-based, from 10-fold site-grouped
+cross-validation in Boyko et al. (in prep), and do not reflect
+phylogenetic placement uncertainty.
+\item \code{species_predictions} - a data frame of per-occurrence estimates with
+columns \code{fossil_name}, \code{site}, \code{species}, \code{morphotype}, \code{age_ma},
+\code{MAT.PIP}, and \code{MAP.PIP}.
+\item \code{placement_log} - a data frame recording how each occurrence was placed
+on the phylogeny (\code{fossil_name}, \code{species}, \code{site}, \code{age_ma}, \code{placed},
+\code{placement_level}, \code{placement_target}, \code{age_fallback}, \code{error}).
+\item \code{unmatched_taxa} - a data frame of occurrences whose reported taxonomy
+matched nothing in the calibration phylogeny, with the names as reported
+(\code{genus_reported}, \code{family_reported}, \code{order_reported}) and whether each
+rank was informal. Use it to find misspellings and synonyms.
+\item \code{imputation_summary} - a data frame with one row per predictor giving the
+number of occurrences whose value was imputed.
+\item \code{processed_leaf_data} - the full processed specimen-level data frame from
 \code{\link[=dilp_processing]{dilp_processing()}}.
-\item \code{processed_site_data} — site-level means of leaf physiognomic variables,
+\item \code{processed_site_data} - site-level means of leaf physiognomic variables,
 aggregated via morphotype then site (same structure as \code{\link[=dilp]{dilp()}}). Used by
 \code{\link[=dilp_cca]{dilp_cca()}}.
 }
@@ -47,25 +73,28 @@ specimens are available per site.
 The method fits a Phylogenetic Generalised Least Squares (PGLS) model on a
 large extant training dataset (Royer et al., n = 1847 species), then at
 prediction time adds a phylogenetic covariance correction that pulls each
-fossil species' prediction toward the climate values of its closest extant
-relatives on the tree.
+fossil occurrence's prediction toward the climate values of its closest
+extant relatives on the tree.
+
+Leaf-level input is taken all the way through: specimens are averaged to
+morphotypes, morphotypes to species-by-site occurrences, missing predictors
+are imputed with the bagged-tree imputers fitted on the calibration data,
+and each occurrence is grafted onto the scaffold phylogeny at its site's
+age. No pre-processing or imputation is required of the caller.
 }
 \examples{
 \dontrun{
-# Add required taxonomy columns to McAbeeExample
-set.seed(42)
+# Add required taxonomy and age columns to McAbeeExample
 fossil_data <- McAbeeExample
-n <- nrow(fossil_data)
-fossil_data$species <- paste0("Betula_sp", sample(1:5, n, replace = TRUE))
-fossil_data$genus   <- "Betula"
-fossil_data$family  <- "Betulaceae"
-fossil_data$order   <- "Fagales"
-fossil_data$age_ma  <- 52.0
+fossil_data$genus  <- "Betula"
+fossil_data$family <- "Betulaceae"
+fossil_data$order  <- "Fagales"
+fossil_data$age_ma <- 52.0
 
 results <- dilp_pgls(fossil_data)
 results$results
 results$species_predictions
-results$placement_log
+results$unmatched_taxa
 
 # Plot sites on a Whittaker biome diagram
 dilp_whittaker(results)
